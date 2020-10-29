@@ -1,88 +1,83 @@
-CSS JSResult
-EDIT ON
-// ページの読み込みを待つ
-window.addEventListener("load", init);
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+var renderer = new THREE.WebGLRenderer();
 
-function init(){
-    // サイズを取得
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+/*
+ In addition to creating the renderer instance, we also need to set the size at which we want it to render our app.
+ It's a good idea to use the width and height of the area we want to fill with our game
+ - in this case, the width and height of the browser window. For performance intensive games, you can also give setSize smaller values,
+ like window.innerWidth/2 and window.innerHeight/2, for half the resolution.
+ This does not mean that the game will only fill half the window, but rather look a bit blurry and scaled up.
 
-    // レンダラーを作成
-    const renderer = new THREE.WebGLRenderer();
-    // 指定した色で背景を塗りつぶす
-    renderer.setClearColor(new THREE.Color("rgb(51, 51, 51)"));
-  　// canvas領域にレンダラーを追加する　
-  　document.body.appendChild(renderer.domElement);
+ Last but not least, we add the renderer element to our HTML document.
+ This is a <canvas> element the renderer uses to display the scene to us.
+*/
 
-    // シーンを作成
-    const scene = new THREE.Scene();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-    // カメラを作成
-    const camera = new THREE.PerspectiveCamera(40, width / height);
-  　// カメラの位置をセットする
-    camera.position.set(0, 0, 1000);
 
-    // ジオメトリを作成
-    const geometry = new THREE.SphereGeometry(300, 30, 30);
 
-    // マテリアルを作成
-    const material = new THREE.MeshStandardMaterial({
-      // 色を指定
-      color: new THREE.Color("rgb(0, 159, 140)"),
-      // 見た目をワイヤーフレームにする
-      wireframe: true
-    });
+/* Create Lights: PointLight / SpotLight etc.*/
+var spotLight = new THREE.SpotLight(0xffffff);
+spotLight.position.set(100,100,100);
+spotLight.castShadow = true; //If set to true light will cast dynamic shadows. Warning: This is expensive and requires tweaking to get shadows looking right.
+spotLight.shadowMapWidth = 1024;
+spotLight.shadowMapHeight = 1024;
+spotLight.shadowCameraNear = 500;
+spotLight.shadowCameraFar = 4000;
+spotLight.shadowCameraFov = 30;
+scene.add(spotLight);
 
-    // メッシュ(球体)を作成
-    const mesh = new THREE.Mesh(geometry, material);
-
-    // 3D空間にメッシュを追加
-    scene.add(mesh);
-
-    // 環境光源を作成
-    const ambient = new THREE.AmbientLight(0xFFFFFF, 1);
-    // シーンに追加
-    scene.add(ambient);
-
-    // 平行光源を作成
-    const directional = new THREE.DirectionalLight(0xFFFFFF, 1);
-    // 平行光源の位置をセットする
-    directional.position.set(1, 1, 1);
-    // シーンに追加
-    scene.add(directional);
-
-    function render(){
-      // メッシュを回転させる
-      mesh.rotation.x += 0.01;
-      mesh.rotation.y += 0.01;
-      // 時間経過でrender関数(アニメーション)を更新する
-      requestAnimationFrame(render);
-      //シーンとカメラをレンダリングして画面を更新する
-      renderer.render(scene, camera);
-    }
-
-    // render関数を実行する
-    render();
-
-  　// 画面のリサイズが行われたらonResize関数を実行する
-    window.addEventListener("resize", onResize);
-
-    function onResize() {
-      // レンダラーのサイズを調整する
-      renderer.setPixelRatio(window.devicePixelRatio);
-      // レンダラーのサイズを画面の幅に合わせる
-      renderer.setSize(width, height);
-
-      // カメラのアスペクト比を正す
-      camera.aspect = width / height;
-      // アスペクト比の変更を有効にする
-      camera.updateProjectionMatrix();
-    }
-
-    // onResize関数を実行
-    onResize();
+/* Create Material */
+function Mat(){
+  var material = new THREE.MeshPhongMaterial({
+    color      : new THREE.Color("rgb(35,35,213)"),  //Diffuse color of the material
+    emissive   : new THREE.Color("rgb(64,128,255)"), //Emissive(light) color of the material, essentially a solid color unaffected by other lighting. Default is black.
+    specular   : new THREE.Color("rgb(93,195,255)"), /*Specular color of the material, i.e., how shiny the material is and the color of its shine.
+                                                       Setting this the same color as the diffuse value (times some intensity) makes the material more metallic-looking;
+                                                       setting this to some gray makes the material look more plastic. Default is dark gray.*/
+    shininess  : 1,                                  //How shiny the specular highlight is; a higher value gives a sharper highlight. Default is 30.
+    shading    : THREE.FlatShading,                  //How the triangles of a curved surface are rendered: THREE.SmoothShading, THREE.FlatShading, THREE.NoShading
+    wireframe  : 1,                                  //THREE.Math.randInt(0,1)
+    transparent: 1,
+    opacity    : 0.15                                //THREE.Math.randFloat(0,1)
+  });
+  return material;
 }
 
+/* Create Geometry */
+var geometry = new THREE.SphereGeometry(50,20,20,0,Math.PI*2,0,Math.PI);
+//SphereGeometry(radius, widthSegments, heightSegments, phiStart, phiLength, thetaStart, thetaLength)
 
-Resources1×0.5×0.25×Rerun
+/* Create Earth Sphere*/
+var earth = new THREE.Mesh(geometry, Mat());
+
+/*
+var numSphere = 30;
+var tabSphere = [];
+for(var i=0: i<numSphere; i++){
+  tabShpere.push(new Sphere(i));
+  scene.add(tabSphere[i].b);
+}
+*/
+
+scene.add(earth);
+
+camera.position.z = 90;
+
+
+
+/*
+  This will create a loop that causes the renderer to draw the scene 60 times per second.
+  If you're new to writing games in the browser, you might say "why don't we just create a setInterval?
+  The thing is - we could, but requestAnimationFrame has a number of advantages.
+  Perhaps the most important one is that it pauses when the user navigates to another browser tab, hence not wasting their precious processing power and battery life.
+*/
+function render(){
+  requestAnimationFrame(render);
+  earth.rotation.x += 0.01;
+  earth.rotation.y += 0.01;
+  renderer.render(scene, camera);
+}
+render();
